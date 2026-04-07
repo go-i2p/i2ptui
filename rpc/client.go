@@ -1,0 +1,190 @@
+package rpc
+
+import (
+	"fmt"
+	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+	i2pcontrol "github.com/go-i2p/go-i2pcontrol"
+)
+
+// RouterSnapshot holds a point-in-time snapshot of router state.
+type RouterSnapshot struct {
+	// Info
+	Status               string
+	NetStatus            string
+	Version              string
+	Uptime               int64
+	IncomingBW           int
+	OutgoingBW           int
+	KnownPeers           int
+	ParticipatingTunnels int
+	Reseeding            bool
+
+	// Stats
+	SendBps              int
+	ReceiveBps           int
+	SendBpsHourAvg       int
+	ReceiveBpsHourAvg    int
+	ParticipatingAvg     int
+	ParticipatingHourAvg int
+	ExplBuildSuccess     int
+	ExplBuildReject      int
+	ExplBuildExpire      int
+	ClientBuildSuccess   int
+	BuildRequestTime     float64
+
+	// Percentages
+	ExplBuildSuccessPct int
+	ExplBuildRejectPct  int
+	ExplBuildExpirePct  int
+
+	// Settings
+	Upnp string
+
+	// Metadata
+	FetchedAt time.Time
+	Err       error
+}
+
+// UptimeDuration returns the router uptime as a time.Duration.
+func (s RouterSnapshot) UptimeDuration() time.Duration {
+	return time.Duration(s.Uptime) * time.Millisecond
+}
+
+// TickMsg signals that a polling interval has elapsed.
+type TickMsg time.Time
+
+// Setup initializes the I2PControl RPC connection and authenticates.
+func Setup(host, port, path, password, cert string) error {
+	if cert != "" {
+		if err := i2pcontrol.InitializeWithSelfSignedCert(host, port, path, cert); err != nil {
+			return fmt.Errorf("init with cert: %w", err)
+		}
+	} else {
+		i2pcontrol.Initialize(host, port, path)
+	}
+	if _, err := i2pcontrol.Authenticate(password); err != nil {
+		return fmt.Errorf("authenticate: %w", err)
+	}
+	return nil
+}
+
+// PollTick returns a tea.Cmd that sends a TickMsg after the interval.
+func PollTick(interval time.Duration) tea.Cmd {
+	return tea.Tick(interval, func(t time.Time) tea.Msg {
+		return TickMsg(t)
+	})
+}
+
+// FetchSnapshotCmd is a tea.Cmd that fetches a RouterSnapshot.
+func FetchSnapshotCmd() tea.Msg {
+	return FetchSnapshot()
+}
+
+// FetchSnapshot gathers current router state into a RouterSnapshot.
+func FetchSnapshot() RouterSnapshot {
+	snap := RouterSnapshot{FetchedAt: time.Now()}
+
+	snap.Status = fetchString(i2pcontrol.Status)
+	snap.NetStatus = fetchString(i2pcontrol.NetStatus)
+	snap.Version = fetchString(i2pcontrol.Version)
+	snap.Uptime = fetchInt64(i2pcontrol.UpTime)
+	snap.IncomingBW = fetchInt(i2pcontrol.IncomingBW)
+	snap.OutgoingBW = fetchInt(i2pcontrol.OutgoingBw)
+	snap.KnownPeers = fetchInt(i2pcontrol.KnownPeers)
+	snap.ParticipatingTunnels = fetchInt(i2pcontrol.ParticipatingTunnels)
+	snap.Reseeding = fetchBool(i2pcontrol.Reseeding)
+
+	snap.SendBps = fetchInt(i2pcontrol.SendBps)
+	snap.ReceiveBps = fetchInt(i2pcontrol.ReceiveBps)
+	snap.SendBpsHourAvg = fetchInt(i2pcontrol.SendBpsHourAverage)
+	snap.ReceiveBpsHourAvg = fetchInt(i2pcontrol.ReceiveBpsHourAverage)
+	snap.ParticipatingAvg = fetchInt(i2pcontrol.ParticipatingAverageTunnels)
+	snap.ParticipatingHourAvg = fetchInt(i2pcontrol.ParticipatingHourAverageTunnels)
+	snap.ExplBuildSuccess = fetchInt(i2pcontrol.ExploratoryBuildSuccess)
+	snap.ExplBuildReject = fetchInt(i2pcontrol.ExploratoryBuildReject)
+	snap.ExplBuildExpire = fetchInt(i2pcontrol.ExploratoryBuildExpire)
+	snap.ClientBuildSuccess = fetchInt(i2pcontrol.ClientBuildSuccess)
+	snap.BuildRequestTime = fetchFloat64(i2pcontrol.BuildRequestTime)
+
+	snap.ExplBuildSuccessPct = fetchInt(i2pcontrol.ExploratoryBuildSuccessPercentage)
+	snap.ExplBuildRejectPct = fetchInt(i2pcontrol.ExploratoryBuildRejectPercentage)
+	snap.ExplBuildExpirePct = fetchInt(i2pcontrol.ExploratoryBuildExpirePercentage)
+
+	snap.Upnp = fetchString(i2pcontrol.Upnp)
+
+	return snap
+}
+
+// RestartGraceful wraps the i2pcontrol call.
+func RestartGraceful() (string, error) {
+	return i2pcontrol.RestartGraceful()
+}
+
+// Restart wraps the i2pcontrol call.
+func Restart() (string, error) {
+	return i2pcontrol.Restart()
+}
+
+// ShutdownGraceful wraps the i2pcontrol call.
+func ShutdownGraceful() (string, error) {
+	return i2pcontrol.ShutdownGraceful()
+}
+
+// Shutdown wraps the i2pcontrol call.
+func Shutdown() (string, error) {
+	return i2pcontrol.Shutdown()
+}
+
+// FindUpdates wraps the i2pcontrol call.
+func FindUpdates() (string, error) {
+	found, err := i2pcontrol.FindUpdates()
+	if err != nil {
+		return "", err
+	}
+	if found {
+		return "Update available", nil
+	}
+	return "No updates available", nil
+}
+
+func fetchString(fn func() (string, error)) string {
+	v, err := fn()
+	if err != nil {
+		return "N/A"
+	}
+	return v
+}
+
+func fetchInt(fn func() (int, error)) int {
+	v, err := fn()
+	if err != nil {
+		return 0
+	}
+	return v
+}
+
+func fetchInt64(fn func() (int64, error)) int64 {
+	v, err := fn()
+	if err != nil {
+		return 0
+	}
+	return v
+}
+
+func fetchFloat64(fn func() (float64, error)) float64 {
+	v, err := fn()
+	if err != nil {
+		return 0
+	}
+	return v
+}
+
+func fetchBool(fn func() (bool, error)) bool {
+	v, err := fn()
+	if err != nil {
+		return false
+	}
+	return v
+}
