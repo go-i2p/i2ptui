@@ -1,2 +1,71 @@
 # i2ptui
-Embeddable TUI and freestanding CLI for I2P using BubbleTea
+
+Embeddable TUI and freestanding CLI for monitoring and managing an I2P router
+via I2PControl-RPC. Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea)
+and [go-i2p/go-i2pcontrol](https://github.com/go-i2p/go-i2pcontrol).
+
+## Features
+
+- **Dashboard** — live view of router status, bandwidth, known peers, participating tunnels, and uptime
+- **Stats** — detailed bandwidth rates, tunnel build success/reject/expire percentages, and build request times
+- **Control** — restart, graceful restart, shutdown, graceful shutdown, and update checks with confirmation prompts
+- **Embeddable** — the root `tea.Model` is exported so other Go programs can host the TUI inside their own Bubble Tea application
+- **Single binary** — `go build ./cmd/i2ptui` produces a static binary with no runtime dependencies beyond a reachable I2PControl port
+
+## Install
+
+```sh
+go install github.com/go-i2p/i2ptui/cmd/i2ptui@latest
+```
+
+## Usage
+
+```sh
+i2ptui [flags]
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--host` | `127.0.0.1` | I2PControl host |
+| `--port` | `7657` | I2PControl port |
+| `--path` | `jsonrpc` | RPC URL path |
+| `--password` | `itoopie` | I2PControl API password |
+| `--cert` | | Path to self-signed cert (enables TLS skip-verify) |
+| `--interval` | `5s` | Polling interval |
+
+## Embedding
+
+```go
+package main
+
+import (
+    "github.com/go-i2p/i2ptui"
+    tea "github.com/charmbracelet/bubbletea"
+)
+
+func main() {
+    m := i2ptui.New(
+        i2ptui.WithHost("127.0.0.1"),
+        i2ptui.WithPort("7657"),
+        i2ptui.WithPassword("itoopie"),
+    )
+    p := tea.NewProgram(m, tea.WithAltScreen())
+    p.Run()
+}
+```
+
+## Key Bindings
+
+| Key | Action |
+|-----|--------|
+| `Tab` / `Shift+Tab` | Cycle tabs |
+| `1` `2` `3` | Jump to Dashboard, Stats, Control |
+| `↑`/`k` `↓`/`j` | Navigate |
+| `Enter` | Activate |
+| `Esc` | Cancel / dismiss |
+| `r` | Force refresh |
+| `q` / `Ctrl+C` | Quit |
+
+## License
+
+MIT
