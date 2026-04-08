@@ -1,3 +1,5 @@
+// Package rpc wraps the go-i2pcontrol library into a polling-based snapshot
+// model for use with Bubble Tea commands.
 package rpc
 
 import (
@@ -81,6 +83,7 @@ func Setup(host, port, path, password, cert string) error {
 	return nil
 }
 
+// captureToken authenticates and stores the API token for subsequent calls.
 func captureToken(password string) error {
 	resp, err := i2pcontrol.Call("Authenticate", map[string]interface{}{
 		"API":      1,
@@ -170,6 +173,7 @@ func ReadSettings() RouterSettings {
 	return s
 }
 
+// readSetting fetches a single NetworkSetting value by key.
 func readSetting(key string) string {
 	tokenMu.RLock()
 	tok := authToken
@@ -226,6 +230,7 @@ func FindUpdates() (string, error) {
 	return "No updates available", nil
 }
 
+// fetchString calls fn and returns "N/A" on error.
 func fetchString(fn func() (string, error)) string {
 	v, err := fn()
 	if err != nil {
@@ -234,6 +239,7 @@ func fetchString(fn func() (string, error)) string {
 	return v
 }
 
+// fetchInt calls fn and returns 0 on error.
 func fetchInt(fn func() (int, error)) int {
 	v, err := fn()
 	if err != nil {
@@ -242,6 +248,7 @@ func fetchInt(fn func() (int, error)) int {
 	return v
 }
 
+// fetchInt64 calls fn and returns 0 on error.
 func fetchInt64(fn func() (int64, error)) int64 {
 	v, err := fn()
 	if err != nil {
@@ -250,6 +257,7 @@ func fetchInt64(fn func() (int64, error)) int64 {
 	return v
 }
 
+// fetchFloat64 calls fn and returns 0 on error.
 func fetchFloat64(fn func() (float64, error)) float64 {
 	v, err := fn()
 	if err != nil {
@@ -258,6 +266,7 @@ func fetchFloat64(fn func() (float64, error)) float64 {
 	return v
 }
 
+// fetchBool calls fn and returns false on error.
 func fetchBool(fn func() (bool, error)) bool {
 	v, err := fn()
 	if err != nil {

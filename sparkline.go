@@ -65,6 +65,7 @@ type barEntry struct {
 	value float64
 }
 
+// minMax returns the minimum and maximum values in vals.
 func minMax(vals []float64) (float64, float64) {
 	mn, mx := vals[0], vals[0]
 	for _, v := range vals[1:] {
@@ -78,6 +79,7 @@ func minMax(vals []float64) (float64, float64) {
 	return mn, mx
 }
 
+// clampIndex constrains idx to the range [0, length-1].
 func clampIndex(idx, length int) int {
 	if idx < 0 {
 		return 0

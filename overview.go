@@ -11,6 +11,7 @@ type overviewModel struct {
 	snapshot rpc.RouterSnapshot
 }
 
+// newOverviewModel returns an empty overviewModel.
 func newOverviewModel() overviewModel {
 	return overviewModel{}
 }
@@ -58,6 +59,7 @@ func (m overviewModel) View(width int) string {
 	return b.String()
 }
 
+// row formats a label-value pair for display.
 func (m overviewModel) row(label, value string) string {
 	return fmt.Sprintf("  %s %s\n",
 		labelStyle.Render(label),

@@ -138,6 +138,7 @@ func (m Model) Init() tea.Cmd {
 	)
 }
 
+// initRPC connects to I2PControl and fetches the first snapshot.
 func (m Model) initRPC() tea.Msg {
 	err := rpc.Setup(m.host, m.port, m.path, m.password, m.cert)
 	if err != nil {
@@ -190,6 +191,7 @@ var numKeyTab = map[string]int{
 	"5": tabSettings,
 }
 
+// handleKey processes keyboard input for the root model.
 func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.control.confirming {
 		var cmd tea.Cmd
@@ -229,6 +231,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// handleMouse processes mouse input for tab switching.
 func (m Model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	if msg.Action == tea.MouseActionRelease && msg.Button == tea.MouseButtonLeft {
 		if msg.Y == 0 {
@@ -238,6 +241,7 @@ func (m Model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// handleSnapshot applies a new router snapshot to the model.
 func (m Model) handleSnapshot(msg rpc.RouterSnapshot) (tea.Model, tea.Cmd) {
 	prevSnap := m.snapshot
 	m.snapshot = msg
@@ -255,6 +259,7 @@ func (m Model) handleSnapshot(msg rpc.RouterSnapshot) (tea.Model, tea.Cmd) {
 	return m, rpc.PollTick(m.interval)
 }
 
+// delegateToTab forwards unhandled messages to the active tab's sub-model.
 func (m Model) delegateToTab(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.activeTab == tabControl {
 		var cmd tea.Cmd
@@ -300,6 +305,7 @@ func (m Model) View() string {
 	return b.String()
 }
 
+// renderActiveTab returns the view string for the currently selected tab.
 func (m Model) renderActiveTab() string {
 	switch m.activeTab {
 	case tabDashboard:
@@ -329,6 +335,7 @@ func (m Model) renderActiveTab() string {
 	}
 }
 
+// renderStatusBar returns the status message and notification bar.
 func (m Model) renderStatusBar() string {
 	var b strings.Builder
 	if m.statusMsg != "" && time.Since(m.statusTime) < 10*time.Second {
@@ -342,6 +349,7 @@ func (m Model) renderStatusBar() string {
 	return b.String()
 }
 
+// recordHistory appends the snapshot's metrics to their history buffers.
 func (m *Model) recordHistory(snap rpc.RouterSnapshot) {
 	t := snap.FetchedAt
 	m.inBWHistory.Add(t, float64(snap.IncomingBW))
@@ -351,6 +359,7 @@ func (m *Model) recordHistory(snap rpc.RouterSnapshot) {
 	m.peerHistory.Add(t, float64(snap.KnownPeers))
 }
 
+// renderGraphs returns the sparkline graph panel for the Dashboard tab.
 func (m Model) renderGraphs() string {
 	var b strings.Builder
 	sparkWidth := m.width - 25
@@ -366,6 +375,7 @@ func (m Model) renderGraphs() string {
 	return b.String()
 }
 
+// graphRow formats a single sparkline row with a label.
 func graphRow(label string, vals []float64, width int) string {
 	spark := renderSparkline(vals, width)
 	if spark == "" {
@@ -374,6 +384,7 @@ func graphRow(label string, vals []float64, width int) string {
 	return fmt.Sprintf("  %s %s\n", labelStyle.Render(label), spark)
 }
 
+// renderBuildChart returns the build success bar chart for the Stats tab.
 func (m Model) renderBuildChart() string {
 	var b strings.Builder
 	b.WriteString("\n")
@@ -393,6 +404,7 @@ func (m Model) renderBuildChart() string {
 	return b.String()
 }
 
+// renderPeerGraph returns the peer count sparkline for the Peers tab.
 func (m Model) renderPeerGraph() string {
 	var b strings.Builder
 	sparkWidth := m.width - 25
@@ -406,6 +418,7 @@ func (m Model) renderPeerGraph() string {
 	return b.String()
 }
 
+// renderTabs returns the tab bar header.
 func (m Model) renderTabs() string {
 	var tabs []string
 	for i, name := range tabNames {
@@ -418,6 +431,7 @@ func (m Model) renderTabs() string {
 	return lipgloss.JoinHorizontal(lipgloss.Top, tabs...)
 }
 
+// renderFooter returns the bottom help and data-age line.
 func (m Model) renderFooter() string {
 	age := ""
 	if !m.snapshot.FetchedAt.IsZero() {
@@ -431,6 +445,7 @@ func (m Model) renderFooter() string {
 	return "\n" + footerStyle.Render(help+strings.Repeat(" ", gap)+age)
 }
 
+// tabFromClick returns the tab index for a mouse click at column x.
 func (m Model) tabFromClick(x int) int {
 	offset := 0
 	for i, name := range tabNames {

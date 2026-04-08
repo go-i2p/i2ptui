@@ -56,6 +56,7 @@ var (
 			Bold(true)
 )
 
+// fmtDuration formats a duration as a human-readable string (e.g. "2d 3h 15m").
 func fmtDuration(d time.Duration) string {
 	d = d.Round(time.Second)
 	days := int(d.Hours()) / 24
@@ -75,6 +76,7 @@ func fmtDuration(d time.Duration) string {
 	return fmt.Sprintf("%ds", seconds)
 }
 
+// fmtBandwidth formats bytes-per-second as a human-readable string.
 func fmtBandwidth(bps int) string {
 	if bps >= 1024*1024 {
 		return fmt.Sprintf("%.1f MB/s", float64(bps)/(1024*1024))

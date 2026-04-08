@@ -25,6 +25,7 @@ type controlModel struct {
 	confirming bool
 }
 
+// newControlModel returns a controlModel with the default router actions.
 func newControlModel() controlModel {
 	return controlModel{
 		actions: []controlAction{
@@ -99,6 +100,7 @@ func (m controlModel) Update(msg tea.Msg) (controlModel, tea.Cmd) {
 	return m, nil
 }
 
+// executeAction runs the given action asynchronously and returns the result.
 func (m controlModel) executeAction(a controlAction) tea.Cmd {
 	return func() tea.Msg {
 		result, err := a.execute()

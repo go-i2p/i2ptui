@@ -37,6 +37,7 @@ type settingsModel struct {
 	needRestart bool
 }
 
+// newSettingsModel returns a settingsModel with default fields.
 func newSettingsModel() settingsModel {
 	fields := []settingsField{
 		newField("Incoming BW (KB/s)", "i2p.router.net.bw.in"),
@@ -47,6 +48,7 @@ func newSettingsModel() settingsModel {
 	return settingsModel{fields: fields}
 }
 
+// newField creates a settingsField with the given label and RPC key.
 func newField(label, key string) settingsField {
 	ti := textinput.New()
 	ti.Placeholder = "..."
@@ -55,10 +57,12 @@ func newField(label, key string) settingsField {
 	return settingsField{label: label, key: key, input: ti}
 }
 
+// fetchSettingsCmd is a tea.Cmd that reads router settings via RPC.
 func fetchSettingsCmd() tea.Msg {
 	return settingsMsg{settings: rpc.ReadSettings()}
 }
 
+// saveCmd returns a tea.Cmd that writes the current field values to the router.
 func (m settingsModel) saveCmd() tea.Cmd {
 	return func() tea.Msg {
 		for _, f := range m.fields {
@@ -101,6 +105,7 @@ func (m settingsModel) Update(msg tea.Msg) (settingsModel, tea.Cmd) {
 	return m.updateInputs(msg)
 }
 
+// handleKey dispatches key events for navigation, editing, and saving.
 func (m settingsModel) handleKey(msg tea.KeyMsg) (settingsModel, tea.Cmd) {
 	if m.confirming {
 		return m.handleConfirm(msg)
@@ -120,6 +125,7 @@ func (m settingsModel) handleKey(msg tea.KeyMsg) (settingsModel, tea.Cmd) {
 	return m, nil
 }
 
+// handleConfirm handles key events within the save confirmation dialog.
 func (m settingsModel) handleConfirm(msg tea.KeyMsg) (settingsModel, tea.Cmd) {
 	switch msg.String() {
 	case "y", "enter":
@@ -132,6 +138,7 @@ func (m settingsModel) handleConfirm(msg tea.KeyMsg) (settingsModel, tea.Cmd) {
 	return m, nil
 }
 
+// updateInputs forwards messages to all text input fields.
 func (m settingsModel) updateInputs(msg tea.Msg) (settingsModel, tea.Cmd) {
 	var cmds []tea.Cmd
 	for i := range m.fields {
@@ -142,6 +149,7 @@ func (m settingsModel) updateInputs(msg tea.Msg) (settingsModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+// applySettings populates the text fields from fetched RouterSettings.
 func (m *settingsModel) applySettings(s rpc.RouterSettings) {
 	values := []string{s.BWIn, s.BWOut, s.BWShare}
 	for i, v := range values {
@@ -187,6 +195,7 @@ func (m settingsModel) View(width int) string {
 	return b.String()
 }
 
+// renderStatus returns the save-in-progress, error, or success message.
 func (m settingsModel) renderStatus() string {
 	if m.saving {
 		return "  Saving...\n"
@@ -200,6 +209,7 @@ func (m settingsModel) renderStatus() string {
 	return ""
 }
 
+// renderConfirm returns the confirmation dialog, or an empty string if hidden.
 func (m settingsModel) renderConfirm() string {
 	if !m.confirming {
 		return ""

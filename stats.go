@@ -11,6 +11,7 @@ type statsModel struct {
 	snapshot rpc.RouterSnapshot
 }
 
+// newStatsModel returns an empty statsModel.
 func newStatsModel() statsModel {
 	return statsModel{}
 }
@@ -52,6 +53,7 @@ func (m statsModel) View(width int) string {
 	return b.String()
 }
 
+// row formats a label-value pair for display.
 func (m statsModel) row(label, value string) string {
 	return fmt.Sprintf("  %s %s\n",
 		labelStyle.Render(label),

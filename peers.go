@@ -11,6 +11,7 @@ type peersModel struct {
 	snapshot rpc.RouterSnapshot
 }
 
+// newPeersModel returns an empty peersModel.
 func newPeersModel() peersModel {
 	return peersModel{}
 }
@@ -35,6 +36,7 @@ func (m peersModel) View(width int) string {
 	return b.String()
 }
 
+// row formats a label-value pair for display.
 func (m peersModel) row(label, value string) string {
 	return fmt.Sprintf("  %s %s\n",
 		labelStyle.Render(label),

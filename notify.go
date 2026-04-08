@@ -20,6 +20,7 @@ type notifyModel struct {
 	prevReseeding bool
 }
 
+// newNotifyModel returns a notifyModel with no initial notifications.
 func newNotifyModel() notifyModel {
 	return notifyModel{}
 }
@@ -40,6 +41,7 @@ func (m *notifyModel) CheckChanges(prev, curr rpc.RouterSnapshot) {
 	m.prevReseeding = curr.Reseeding
 }
 
+// add appends a notification and sends a desktop notification.
 func (m *notifyModel) add(msg string) {
 	m.notifications = append(m.notifications, notification{
 		message: msg,

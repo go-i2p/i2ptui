@@ -1,3 +1,4 @@
+// Command i2ptui is the standalone CLI for the I2P router TUI.
 package main
 
 import (
@@ -45,6 +46,7 @@ func main() {
 	}
 }
 
+// defaultStr returns val if non-empty, otherwise fallback.
 func defaultStr(val, fallback string) string {
 	if val != "" {
 		return val
