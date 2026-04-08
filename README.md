@@ -29,7 +29,18 @@ go install github.com/go-i2p/i2ptui/cmd/i2ptui@latest
 
 ```sh
 i2ptui [flags]
+i2ptui [command]
 ```
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `completion` | Generate shell completion scripts (bash, zsh, fish, powershell) |
+| `version` | Print the build version |
+| `help` | Help about any command |
+
+### Flags
 
 | Flag | Default | Description |
 |------|---------|-------------|
@@ -40,6 +51,19 @@ i2ptui [flags]
 | `--cert` | | Path to self-signed cert (enables TLS skip-verify) |
 | `--interval` | `5s` | Polling interval |
 | `--theme` | `dark` | Color theme (`dark`, `light`) |
+
+### Shell Completions
+
+```sh
+# Bash
+i2ptui completion bash > /etc/bash_completion.d/i2ptui
+
+# Zsh
+i2ptui completion zsh > "${fpath[1]}/_i2ptui"
+
+# Fish
+i2ptui completion fish > ~/.config/fish/completions/i2ptui.fish
+```
 
 ## Embedding
 
