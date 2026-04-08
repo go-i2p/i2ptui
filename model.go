@@ -55,6 +55,11 @@ func WithInterval(d time.Duration) Option {
 	return func(m *Model) { m.interval = d }
 }
 
+// WithTheme sets the color theme.
+func WithTheme(t Theme) Option {
+	return func(m *Model) { applyTheme(t) }
+}
+
 // Model is the root Bubble Tea model for i2ptui.
 type Model struct {
 	host     string
@@ -198,6 +203,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		return m, nil
+
+	case tea.MouseMsg:
+		if msg.Action == tea.MouseActionRelease && msg.Button == tea.MouseButtonLeft {
+			if msg.Y == 0 {
+				m.activeTab = m.tabFromClick(msg.X)
+			}
+		}
 		return m, nil
 
 	case rpc.RouterSnapshot:
@@ -403,4 +416,16 @@ func (m Model) renderFooter() string {
 		gap = 1
 	}
 	return "\n" + footerStyle.Render(help+strings.Repeat(" ", gap)+age)
+}
+
+func (m Model) tabFromClick(x int) int {
+	offset := 0
+	for i, name := range tabNames {
+		w := lipgloss.Width(name) + 4 // padding 0,2 on each side
+		if x >= offset && x < offset+w {
+			return i
+		}
+		offset += w
+	}
+	return m.activeTab
 }
