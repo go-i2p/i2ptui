@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -56,7 +57,11 @@ func (s RouterSnapshot) UptimeDuration() time.Duration {
 type TickMsg time.Time
 
 // authToken holds the API token for custom RPC calls.
-var authToken string
+// Guarded by tokenMu; written once in Setup, read by readSetting/WriteSetting.
+var (
+	authToken string
+	tokenMu   sync.RWMutex
+)
 
 // Setup initializes the I2PControl RPC connection and authenticates.
 func Setup(host, port, path, password, cert string) error {
@@ -88,7 +93,9 @@ func captureToken(password string) error {
 	if !ok {
 		return fmt.Errorf("missing token in response")
 	}
+	tokenMu.Lock()
 	authToken = tok
+	tokenMu.Unlock()
 	return nil
 }
 
@@ -164,9 +171,12 @@ func ReadSettings() RouterSettings {
 }
 
 func readSetting(key string) string {
+	tokenMu.RLock()
+	tok := authToken
+	tokenMu.RUnlock()
 	resp, err := i2pcontrol.Call("NetworkSetting", map[string]interface{}{
 		key:     nil,
-		"Token": authToken,
+		"Token": tok,
 	})
 	if err != nil {
 		return "N/A"
@@ -179,9 +189,12 @@ func readSetting(key string) string {
 
 // WriteSetting sets a single NetworkSetting key to the given value.
 func WriteSetting(key, value string) error {
+	tokenMu.RLock()
+	tok := authToken
+	tokenMu.RUnlock()
 	_, err := i2pcontrol.Call("NetworkSetting", map[string]interface{}{
 		key:     value,
-		"Token": authToken,
+		"Token": tok,
 	})
 	return err
 }

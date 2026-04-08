@@ -8,7 +8,14 @@ and [go-i2p/go-i2pcontrol](https://github.com/go-i2p/go-i2pcontrol).
 
 - **Dashboard** — live view of router status, bandwidth, known peers, participating tunnels, and uptime
 - **Stats** — detailed bandwidth rates, tunnel build success/reject/expire percentages, and build request times
+- **Peers** — peer count overview with reseeding and net-status indicators
 - **Control** — restart, graceful restart, shutdown, graceful shutdown, and update checks with confirmation prompts
+- **Settings** — edit bandwidth limits and share percentage via I2PControl with confirmation dialog and restart-required indicator
+- **Live Graphs** — Unicode sparklines for bandwidth, tunnels, and peer count; horizontal bar chart for build success rates; toggle with `g`
+- **Notifications** — in-TUI notification bar for status changes with optional desktop notifications (`notify-send` / `osascript`)
+- **Theming** — built-in dark and light color themes selectable via `--theme` flag or config file
+- **Mouse support** — click tabs to switch; works alongside keyboard navigation
+- **Persistent config** — defaults stored in `~/.config/i2ptui/config.json`
 - **Embeddable** — the root `tea.Model` is exported so other Go programs can host the TUI inside their own Bubble Tea application
 - **Single binary** — `go build ./cmd/i2ptui` produces a static binary with no runtime dependencies beyond a reachable I2PControl port
 
@@ -32,6 +39,7 @@ i2ptui [flags]
 | `--password` | `itoopie` | I2PControl API password |
 | `--cert` | | Path to self-signed cert (enables TLS skip-verify) |
 | `--interval` | `5s` | Polling interval |
+| `--theme` | `dark` | Color theme (`dark`, `light`) |
 
 ## Embedding
 
@@ -49,7 +57,7 @@ func main() {
         i2ptui.WithPort("7657"),
         i2ptui.WithPassword("itoopie"),
     )
-    p := tea.NewProgram(m, tea.WithAltScreen())
+    p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
     p.Run()
 }
 ```
@@ -59,10 +67,11 @@ func main() {
 | Key | Action |
 |-----|--------|
 | `Tab` / `Shift+Tab` | Cycle tabs |
-| `1` `2` `3` | Jump to Dashboard, Stats, Control |
+| `1` `2` `3` `4` `5` | Jump to Dashboard, Stats, Peers, Control, Settings |
 | `↑`/`k` `↓`/`j` | Navigate |
 | `Enter` | Activate |
 | `Esc` | Cancel / dismiss |
+| `g` | Toggle graph panel |
 | `r` | Force refresh |
 | `q` / `Ctrl+C` | Quit |
 

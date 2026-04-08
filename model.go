@@ -150,121 +150,127 @@ func (m Model) initRPC() tea.Msg {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if m.control.confirming {
-			var cmd tea.Cmd
-			m.control, cmd = m.control.Update(msg)
-			return m, cmd
-		}
-		if m.settings.confirming {
-			var cmd tea.Cmd
-			m.settings, cmd = m.settings.Update(msg)
-			return m, cmd
-		}
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-		case "tab":
-			m.activeTab = (m.activeTab + 1) % len(tabNames)
-			return m, nil
-		case "shift+tab":
-			m.activeTab = (m.activeTab - 1 + len(tabNames)) % len(tabNames)
-			return m, nil
-		case "1":
-			m.activeTab = tabDashboard
-			return m, nil
-		case "2":
-			m.activeTab = tabStats
-			return m, nil
-		case "3":
-			m.activeTab = tabPeers
-			return m, nil
-		case "4":
-			m.activeTab = tabControl
-			return m, nil
-		case "5":
-			m.activeTab = tabSettings
-			if !m.settings.loaded {
-				return m, fetchSettingsCmd
-			}
-			return m, nil
-		case "r":
-			m.loading = true
-			return m, rpc.FetchSnapshotCmd
-		case "g":
-			m.showGraphs = !m.showGraphs
-			return m, nil
-		case "esc":
-			if m.notify.HasNotifications() {
-				m.notify.Dismiss()
-				return m, nil
-			}
-		}
-
+		return m.handleKey(msg)
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
 		return m, nil
-
 	case tea.MouseMsg:
-		if msg.Action == tea.MouseActionRelease && msg.Button == tea.MouseButtonLeft {
-			if msg.Y == 0 {
-				m.activeTab = m.tabFromClick(msg.X)
-			}
-		}
-		return m, nil
-
+		return m.handleMouse(msg)
 	case rpc.RouterSnapshot:
-		prevSnap := m.snapshot
-		m.snapshot = msg
-		m.loading = false
-		if msg.Err != nil {
-			m.err = msg.Err
-		} else {
-			m.err = nil
-			m.recordHistory(msg)
-			m.notify.CheckChanges(prevSnap, msg)
-		}
-		m.overview = m.overview.SetSnapshot(msg)
-		m.stats = m.stats.SetSnapshot(msg)
-		m.peers = m.peers.SetSnapshot(msg)
-		return m, rpc.PollTick(m.interval)
-
+		return m.handleSnapshot(msg)
 	case rpc.TickMsg:
 		return m, rpc.FetchSnapshotCmd
-
 	case controlActionMsg:
 		m.statusMsg = msg.result
 		m.statusTime = time.Now()
 		return m, nil
-
 	case settingsMsg:
 		var cmd tea.Cmd
 		m.settings, cmd = m.settings.Update(msg)
 		return m, cmd
-
 	case settingsSavedMsg:
 		var cmd tea.Cmd
 		m.settings, cmd = m.settings.Update(msg)
 		return m, cmd
-
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	}
+	return m.delegateToTab(msg)
+}
 
+func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.control.confirming {
+		var cmd tea.Cmd
+		m.control, cmd = m.control.Update(msg)
+		return m, cmd
+	}
+	if m.settings.confirming {
+		var cmd tea.Cmd
+		m.settings, cmd = m.settings.Update(msg)
+		return m, cmd
+	}
+	switch msg.String() {
+	case "ctrl+c", "q":
+		return m, tea.Quit
+	case "tab":
+		m.activeTab = (m.activeTab + 1) % len(tabNames)
+		return m, nil
+	case "shift+tab":
+		m.activeTab = (m.activeTab - 1 + len(tabNames)) % len(tabNames)
+		return m, nil
+	case "1":
+		m.activeTab = tabDashboard
+		return m, nil
+	case "2":
+		m.activeTab = tabStats
+		return m, nil
+	case "3":
+		m.activeTab = tabPeers
+		return m, nil
+	case "4":
+		m.activeTab = tabControl
+		return m, nil
+	case "5":
+		m.activeTab = tabSettings
+		if !m.settings.loaded {
+			return m, fetchSettingsCmd
+		}
+		return m, nil
+	case "r":
+		m.loading = true
+		return m, rpc.FetchSnapshotCmd
+	case "g":
+		m.showGraphs = !m.showGraphs
+		return m, nil
+	case "esc":
+		if m.notify.HasNotifications() {
+			m.notify.Dismiss()
+			return m, nil
+		}
+	}
+	return m, nil
+}
+
+func (m Model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
+	if msg.Action == tea.MouseActionRelease && msg.Button == tea.MouseButtonLeft {
+		if msg.Y == 0 {
+			m.activeTab = m.tabFromClick(msg.X)
+		}
+	}
+	return m, nil
+}
+
+func (m Model) handleSnapshot(msg rpc.RouterSnapshot) (tea.Model, tea.Cmd) {
+	prevSnap := m.snapshot
+	m.snapshot = msg
+	m.loading = false
+	if msg.Err != nil {
+		m.err = msg.Err
+	} else {
+		m.err = nil
+		m.recordHistory(msg)
+		m.notify.CheckChanges(prevSnap, msg)
+	}
+	m.overview = m.overview.SetSnapshot(msg)
+	m.stats = m.stats.SetSnapshot(msg)
+	m.peers = m.peers.SetSnapshot(msg)
+	return m, rpc.PollTick(m.interval)
+}
+
+func (m Model) delegateToTab(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.activeTab == tabControl {
 		var cmd tea.Cmd
 		m.control, cmd = m.control.Update(msg)
 		return m, cmd
 	}
-
 	if m.activeTab == tabSettings {
 		var cmd tea.Cmd
 		m.settings, cmd = m.settings.Update(msg)
 		return m, cmd
 	}
-
 	return m, nil
 }
 
@@ -292,40 +298,52 @@ func (m Model) View() string {
 		return b.String()
 	}
 
+	b.WriteString(m.renderActiveTab())
+	b.WriteString(m.renderStatusBar())
+	b.WriteString(m.renderFooter())
+
+	return b.String()
+}
+
+func (m Model) renderActiveTab() string {
 	switch m.activeTab {
 	case tabDashboard:
-		b.WriteString(m.overview.View(m.width))
+		s := m.overview.View(m.width)
 		if m.showGraphs {
-			b.WriteString(m.renderGraphs())
+			s += m.renderGraphs()
 		}
+		return s
 	case tabStats:
-		b.WriteString(m.stats.View(m.width))
+		s := m.stats.View(m.width)
 		if m.showGraphs {
-			b.WriteString(m.renderBuildChart())
+			s += m.renderBuildChart()
 		}
+		return s
 	case tabPeers:
-		b.WriteString(m.peers.View(m.width))
+		s := m.peers.View(m.width)
 		if m.showGraphs {
-			b.WriteString(m.renderPeerGraph())
+			s += m.renderPeerGraph()
 		}
+		return s
 	case tabControl:
-		b.WriteString(m.control.View(m.width))
+		return m.control.View(m.width)
 	case tabSettings:
-		b.WriteString(m.settings.View(m.width))
+		return m.settings.View(m.width)
+	default:
+		return ""
 	}
+}
 
+func (m Model) renderStatusBar() string {
+	var b strings.Builder
 	if m.statusMsg != "" && time.Since(m.statusTime) < 10*time.Second {
 		b.WriteString("\n")
 		b.WriteString(statusStyle.Render(fmt.Sprintf("  %s", m.statusMsg)))
 	}
-
 	if nv := m.notify.View(); nv != "" {
 		b.WriteString("\n")
 		b.WriteString(nv)
 	}
-
-	b.WriteString(m.renderFooter())
-
 	return b.String()
 }
 
