@@ -50,7 +50,7 @@ func (m *notifyModel) add(msg string) {
 	desktopNotify("i2ptui", msg)
 }
 
-// Dismiss removes the first notification.
+// Dismiss removes the first notification from the pending queue.
 func (m *notifyModel) Dismiss() {
 	if len(m.notifications) > 0 {
 		m.notifications = m.notifications[1:]
@@ -62,7 +62,7 @@ func (m *notifyModel) HasNotifications() bool {
 	return len(m.notifications) > 0
 }
 
-// View renders the notification bar.
+// View renders the notification bar below the status line.
 func (m *notifyModel) View() string {
 	if len(m.notifications) == 0 {
 		return ""

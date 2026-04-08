@@ -22,15 +22,15 @@ const (
 
 var tabNames = []string{"Dashboard", "Stats", "Peers", "Control", "Settings"}
 
-// Option configures a Model.
+// Option configures a Model before it starts.
 type Option func(*Model)
 
-// WithHost sets the I2PControl host.
+// WithHost sets the I2PControl host address to connect to.
 func WithHost(h string) Option {
 	return func(m *Model) { m.host = h }
 }
 
-// WithPort sets the I2PControl port.
+// WithPort sets the I2PControl port number to connect to.
 func WithPort(p string) Option {
 	return func(m *Model) { m.port = p }
 }
@@ -50,12 +50,12 @@ func WithCert(c string) Option {
 	return func(m *Model) { m.cert = c }
 }
 
-// WithInterval sets the polling interval.
+// WithInterval sets the polling interval between snapshot fetches.
 func WithInterval(d time.Duration) Option {
 	return func(m *Model) { m.interval = d }
 }
 
-// WithTheme sets the color theme.
+// WithTheme sets the color theme used for rendering.
 func WithTheme(t Theme) Option {
 	return func(m *Model) { applyTheme(t) }
 }
@@ -130,7 +130,7 @@ func New(opts ...Option) Model {
 	return m
 }
 
-// Init implements tea.Model.
+// Init implements tea.Model and starts background polling.
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(
 		m.spinner.Tick,
@@ -147,7 +147,7 @@ func (m Model) initRPC() tea.Msg {
 	return rpc.FetchSnapshot()
 }
 
-// Update implements tea.Model.
+// Update implements tea.Model and dispatches incoming messages.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -274,7 +274,7 @@ func (m Model) delegateToTab(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// View implements tea.Model.
+// View implements tea.Model and composes the full layout.
 func (m Model) View() string {
 	if m.width == 0 {
 		return "Initializing..."

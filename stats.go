@@ -16,13 +16,13 @@ func newStatsModel() statsModel {
 	return statsModel{}
 }
 
-// SetSnapshot updates the snapshot data.
+// SetSnapshot updates the snapshot data used by the stats view.
 func (m statsModel) SetSnapshot(s rpc.RouterSnapshot) statsModel {
 	m.snapshot = s
 	return m
 }
 
-// View renders the stats tab.
+// View renders the stats tab with bandwidth and performance figures.
 func (m statsModel) View(width int) string {
 	s := m.snapshot
 	var b strings.Builder

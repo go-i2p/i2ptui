@@ -16,13 +16,13 @@ func newPeersModel() peersModel {
 	return peersModel{}
 }
 
-// SetSnapshot updates the snapshot data.
+// SetSnapshot updates the snapshot data used by the peers table.
 func (m peersModel) SetSnapshot(s rpc.RouterSnapshot) peersModel {
 	m.snapshot = s
 	return m
 }
 
-// View renders the peers tab.
+// View renders the peers tab with tunnel and peer counts.
 func (m peersModel) View(width int) string {
 	s := m.snapshot
 	var b strings.Builder

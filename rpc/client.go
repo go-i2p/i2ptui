@@ -149,7 +149,7 @@ func FetchSnapshot() RouterSnapshot {
 	return snap
 }
 
-// RestartGraceful wraps the i2pcontrol call.
+// RestartGraceful wraps the i2pcontrol graceful restart RPC call.
 func RestartGraceful() (string, error) {
 	return i2pcontrol.RestartGraceful()
 }
@@ -203,22 +203,22 @@ func WriteSetting(key, value string) error {
 	return err
 }
 
-// Restart wraps the i2pcontrol call.
+// Restart wraps the i2pcontrol immediate restart RPC call.
 func Restart() (string, error) {
 	return i2pcontrol.Restart()
 }
 
-// ShutdownGraceful wraps the i2pcontrol call.
+// ShutdownGraceful wraps the i2pcontrol graceful shutdown RPC call.
 func ShutdownGraceful() (string, error) {
 	return i2pcontrol.ShutdownGraceful()
 }
 
-// Shutdown wraps the i2pcontrol call.
+// Shutdown wraps the i2pcontrol immediate shutdown RPC call.
 func Shutdown() (string, error) {
 	return i2pcontrol.Shutdown()
 }
 
-// FindUpdates wraps the i2pcontrol call.
+// FindUpdates wraps the i2pcontrol update check RPC call.
 func FindUpdates() (string, error) {
 	found, err := i2pcontrol.FindUpdates()
 	if err != nil {

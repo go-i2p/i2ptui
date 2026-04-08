@@ -159,7 +159,7 @@ func (m *settingsModel) applySettings(s rpc.RouterSettings) {
 	}
 }
 
-// View renders the settings tab.
+// View renders the settings tab with editable configuration fields.
 func (m settingsModel) View(width int) string {
 	var b strings.Builder
 

@@ -115,7 +115,7 @@ func (m controlModel) executeAction(a controlAction) tea.Cmd {
 	}
 }
 
-// View renders the control tab.
+// View renders the control tab with action buttons and confirmation prompts.
 func (m controlModel) View(width int) string {
 	var b strings.Builder
 

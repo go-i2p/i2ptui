@@ -16,13 +16,13 @@ func newOverviewModel() overviewModel {
 	return overviewModel{}
 }
 
-// SetSnapshot updates the snapshot data.
+// SetSnapshot updates the snapshot data used by the dashboard.
 func (m overviewModel) SetSnapshot(s rpc.RouterSnapshot) overviewModel {
 	m.snapshot = s
 	return m
 }
 
-// View renders the dashboard tab.
+// View renders the dashboard tab with the router overview.
 func (m overviewModel) View(width int) string {
 	s := m.snapshot
 	var b strings.Builder
