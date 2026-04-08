@@ -55,6 +55,9 @@ func (s RouterSnapshot) UptimeDuration() time.Duration {
 // TickMsg signals that a polling interval has elapsed.
 type TickMsg time.Time
 
+// authToken holds the API token for custom RPC calls.
+var authToken string
+
 // Setup initializes the I2PControl RPC connection and authenticates.
 func Setup(host, port, path, password, cert string) error {
 	if cert != "" {
@@ -67,6 +70,25 @@ func Setup(host, port, path, password, cert string) error {
 	if _, err := i2pcontrol.Authenticate(password); err != nil {
 		return fmt.Errorf("authenticate: %w", err)
 	}
+	if err := captureToken(password); err != nil {
+		return fmt.Errorf("capture token: %w", err)
+	}
+	return nil
+}
+
+func captureToken(password string) error {
+	resp, err := i2pcontrol.Call("Authenticate", map[string]interface{}{
+		"API":      1,
+		"Password": password,
+	})
+	if err != nil {
+		return err
+	}
+	tok, ok := resp["Token"].(string)
+	if !ok {
+		return fmt.Errorf("missing token in response")
+	}
+	authToken = tok
 	return nil
 }
 
@@ -120,6 +142,48 @@ func FetchSnapshot() RouterSnapshot {
 // RestartGraceful wraps the i2pcontrol call.
 func RestartGraceful() (string, error) {
 	return i2pcontrol.RestartGraceful()
+}
+
+// RouterSettings holds the current router configuration values.
+type RouterSettings struct {
+	BWIn    string
+	BWOut   string
+	BWShare string
+	Upnp    string
+	Err     error
+}
+
+// ReadSettings fetches the current settings via NetworkSetting.
+func ReadSettings() RouterSettings {
+	s := RouterSettings{}
+	s.BWIn = readSetting("i2p.router.net.bw.in")
+	s.BWOut = readSetting("i2p.router.net.bw.out")
+	s.BWShare = readSetting("i2p.router.net.bw.share")
+	s.Upnp = readSetting("i2p.router.net.upnp")
+	return s
+}
+
+func readSetting(key string) string {
+	resp, err := i2pcontrol.Call("NetworkSetting", map[string]interface{}{
+		key:     nil,
+		"Token": authToken,
+	})
+	if err != nil {
+		return "N/A"
+	}
+	if v, ok := resp[key]; ok && v != nil {
+		return fmt.Sprintf("%v", v)
+	}
+	return "N/A"
+}
+
+// WriteSetting sets a single NetworkSetting key to the given value.
+func WriteSetting(key, value string) error {
+	_, err := i2pcontrol.Call("NetworkSetting", map[string]interface{}{
+		key:     value,
+		"Token": authToken,
+	})
+	return err
 }
 
 // Restart wraps the i2pcontrol call.

@@ -15,10 +15,12 @@ import (
 const (
 	tabDashboard = iota
 	tabStats
+	tabPeers
 	tabControl
+	tabSettings
 )
 
-var tabNames = []string{"Dashboard", "Stats", "Control"}
+var tabNames = []string{"Dashboard", "Stats", "Peers", "Control", "Settings"}
 
 // Option configures a Model.
 type Option func(*Model)
@@ -73,10 +75,21 @@ type Model struct {
 
 	overview overviewModel
 	stats    statsModel
+	peers    peersModel
 	control  controlModel
+	settings settingsModel
 
 	statusMsg  string
 	statusTime time.Time
+
+	notify notifyModel
+
+	showGraphs       bool
+	inBWHistory      *historyBuffer
+	outBWHistory     *historyBuffer
+	tunnelHistory    *historyBuffer
+	buildSuccHistory *historyBuffer
+	peerHistory      *historyBuffer
 }
 
 // New creates a new Model with the given options.
@@ -85,17 +98,26 @@ func New(opts ...Option) Model {
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
+	histWindow := 5 * time.Minute
 	m := Model{
-		host:     "127.0.0.1",
-		port:     "7657",
-		path:     "jsonrpc",
-		password: "itoopie",
-		interval: 5 * time.Second,
-		spinner:  s,
-		loading:  true,
-		overview: newOverviewModel(),
-		stats:    newStatsModel(),
-		control:  newControlModel(),
+		host:             "127.0.0.1",
+		port:             "7657",
+		path:             "jsonrpc",
+		password:         "itoopie",
+		interval:         5 * time.Second,
+		spinner:          s,
+		loading:          true,
+		overview:         newOverviewModel(),
+		stats:            newStatsModel(),
+		peers:            newPeersModel(),
+		control:          newControlModel(),
+		settings:         newSettingsModel(),
+		notify:           newNotifyModel(),
+		inBWHistory:      newHistoryBuffer(histWindow),
+		outBWHistory:     newHistoryBuffer(histWindow),
+		tunnelHistory:    newHistoryBuffer(histWindow),
+		buildSuccHistory: newHistoryBuffer(histWindow),
+		peerHistory:      newHistoryBuffer(histWindow),
 	}
 	for _, o := range opts {
 		o(&m)
@@ -128,6 +150,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.control, cmd = m.control.Update(msg)
 			return m, cmd
 		}
+		if m.settings.confirming {
+			var cmd tea.Cmd
+			m.settings, cmd = m.settings.Update(msg)
+			return m, cmd
+		}
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -144,11 +171,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.activeTab = tabStats
 			return m, nil
 		case "3":
+			m.activeTab = tabPeers
+			return m, nil
+		case "4":
 			m.activeTab = tabControl
+			return m, nil
+		case "5":
+			m.activeTab = tabSettings
+			if !m.settings.loaded {
+				return m, fetchSettingsCmd
+			}
 			return m, nil
 		case "r":
 			m.loading = true
 			return m, rpc.FetchSnapshotCmd
+		case "g":
+			m.showGraphs = !m.showGraphs
+			return m, nil
+		case "esc":
+			if m.notify.HasNotifications() {
+				m.notify.Dismiss()
+				return m, nil
+			}
 		}
 
 	case tea.WindowSizeMsg:
@@ -157,15 +201,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case rpc.RouterSnapshot:
+		prevSnap := m.snapshot
 		m.snapshot = msg
 		m.loading = false
 		if msg.Err != nil {
 			m.err = msg.Err
 		} else {
 			m.err = nil
+			m.recordHistory(msg)
+			m.notify.CheckChanges(prevSnap, msg)
 		}
 		m.overview = m.overview.SetSnapshot(msg)
 		m.stats = m.stats.SetSnapshot(msg)
+		m.peers = m.peers.SetSnapshot(msg)
 		return m, rpc.PollTick(m.interval)
 
 	case rpc.TickMsg:
@@ -176,6 +224,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.statusTime = time.Now()
 		return m, nil
 
+	case settingsMsg:
+		var cmd tea.Cmd
+		m.settings, cmd = m.settings.Update(msg)
+		return m, cmd
+
+	case settingsSavedMsg:
+		var cmd tea.Cmd
+		m.settings, cmd = m.settings.Update(msg)
+		return m, cmd
+
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
@@ -185,6 +243,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.activeTab == tabControl {
 		var cmd tea.Cmd
 		m.control, cmd = m.control.Update(msg)
+		return m, cmd
+	}
+
+	if m.activeTab == tabSettings {
+		var cmd tea.Cmd
+		m.settings, cmd = m.settings.Update(msg)
 		return m, cmd
 	}
 
@@ -218,10 +282,23 @@ func (m Model) View() string {
 	switch m.activeTab {
 	case tabDashboard:
 		b.WriteString(m.overview.View(m.width))
+		if m.showGraphs {
+			b.WriteString(m.renderGraphs())
+		}
 	case tabStats:
 		b.WriteString(m.stats.View(m.width))
+		if m.showGraphs {
+			b.WriteString(m.renderBuildChart())
+		}
+	case tabPeers:
+		b.WriteString(m.peers.View(m.width))
+		if m.showGraphs {
+			b.WriteString(m.renderPeerGraph())
+		}
 	case tabControl:
 		b.WriteString(m.control.View(m.width))
+	case tabSettings:
+		b.WriteString(m.settings.View(m.width))
 	}
 
 	if m.statusMsg != "" && time.Since(m.statusTime) < 10*time.Second {
@@ -229,8 +306,77 @@ func (m Model) View() string {
 		b.WriteString(statusStyle.Render(fmt.Sprintf("  %s", m.statusMsg)))
 	}
 
+	if nv := m.notify.View(); nv != "" {
+		b.WriteString("\n")
+		b.WriteString(nv)
+	}
+
 	b.WriteString(m.renderFooter())
 
+	return b.String()
+}
+
+func (m *Model) recordHistory(snap rpc.RouterSnapshot) {
+	t := snap.FetchedAt
+	m.inBWHistory.Add(t, float64(snap.IncomingBW))
+	m.outBWHistory.Add(t, float64(snap.OutgoingBW))
+	m.tunnelHistory.Add(t, float64(snap.ParticipatingTunnels))
+	m.buildSuccHistory.Add(t, float64(snap.ExplBuildSuccessPct))
+	m.peerHistory.Add(t, float64(snap.KnownPeers))
+}
+
+func (m Model) renderGraphs() string {
+	var b strings.Builder
+	sparkWidth := m.width - 25
+	if sparkWidth < 10 {
+		sparkWidth = 10
+	}
+	b.WriteString("\n")
+	b.WriteString(sectionStyle.Render("  Graphs"))
+	b.WriteString("\n")
+	b.WriteString(graphRow("Incoming BW", m.inBWHistory.Values(), sparkWidth))
+	b.WriteString(graphRow("Outgoing BW", m.outBWHistory.Values(), sparkWidth))
+	b.WriteString(graphRow("Tunnels", m.tunnelHistory.Values(), sparkWidth))
+	return b.String()
+}
+
+func graphRow(label string, vals []float64, width int) string {
+	spark := renderSparkline(vals, width)
+	if spark == "" {
+		spark = "(no data)"
+	}
+	return fmt.Sprintf("  %s %s\n", labelStyle.Render(label), spark)
+}
+
+func (m Model) renderBuildChart() string {
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(sectionStyle.Render("  Build Success Rate"))
+	b.WriteString("\n")
+	s := m.snapshot
+	entries := []barEntry{
+		{label: "Success", value: float64(s.ExplBuildSuccessPct)},
+		{label: "Reject ", value: float64(s.ExplBuildRejectPct)},
+		{label: "Expire ", value: float64(s.ExplBuildExpirePct)},
+	}
+	chartWidth := m.width - 20
+	if chartWidth < 10 {
+		chartWidth = 10
+	}
+	b.WriteString(renderBarChart(entries, chartWidth))
+	return b.String()
+}
+
+func (m Model) renderPeerGraph() string {
+	var b strings.Builder
+	sparkWidth := m.width - 25
+	if sparkWidth < 10 {
+		sparkWidth = 10
+	}
+	b.WriteString("\n")
+	b.WriteString(sectionStyle.Render("  Peer Count History"))
+	b.WriteString("\n")
+	b.WriteString(graphRow("Known Peers", m.peerHistory.Values(), sparkWidth))
 	return b.String()
 }
 
@@ -251,7 +397,7 @@ func (m Model) renderFooter() string {
 	if !m.snapshot.FetchedAt.IsZero() {
 		age = fmt.Sprintf("Updated %s ago", fmtDuration(time.Since(m.snapshot.FetchedAt)))
 	}
-	help := "tab: switch  r: refresh  q: quit"
+	help := "tab: switch  r: refresh  g: graphs  q: quit"
 	gap := m.width - lipgloss.Width(age) - lipgloss.Width(help)
 	if gap < 1 {
 		gap = 1

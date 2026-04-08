@@ -74,8 +74,14 @@ func TestTabSwitching(t *testing.T) {
 
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'3'}})
 	m = updated.(Model)
+	if m.activeTab != tabPeers {
+		t.Errorf("expected tab peers after '3', got %d", m.activeTab)
+	}
+
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'4'}})
+	m = updated.(Model)
 	if m.activeTab != tabControl {
-		t.Errorf("expected tab control after '3', got %d", m.activeTab)
+		t.Errorf("expected tab control after '4', got %d", m.activeTab)
 	}
 
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})

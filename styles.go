@@ -50,6 +50,10 @@ var (
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("205")).
 			Padding(1, 3)
+
+	notifyStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("228")).
+			Bold(true)
 )
 
 func fmtDuration(d time.Duration) string {
