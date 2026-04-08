@@ -181,6 +181,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m.delegateToTab(msg)
 }
 
+// numKeyTab maps numeric key strings to tab indices.
+var numKeyTab = map[string]int{
+	"1": tabDashboard,
+	"2": tabStats,
+	"3": tabPeers,
+	"4": tabControl,
+	"5": tabSettings,
+}
+
 func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.control.confirming {
 		var cmd tea.Cmd
@@ -192,43 +201,29 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.settings, cmd = m.settings.Update(msg)
 		return m, cmd
 	}
-	switch msg.String() {
+	key := msg.String()
+	if tab, ok := numKeyTab[key]; ok {
+		m.activeTab = tab
+		if tab == tabSettings && !m.settings.loaded {
+			return m, fetchSettingsCmd
+		}
+		return m, nil
+	}
+	switch key {
 	case "ctrl+c", "q":
 		return m, tea.Quit
 	case "tab":
 		m.activeTab = (m.activeTab + 1) % len(tabNames)
-		return m, nil
 	case "shift+tab":
 		m.activeTab = (m.activeTab - 1 + len(tabNames)) % len(tabNames)
-		return m, nil
-	case "1":
-		m.activeTab = tabDashboard
-		return m, nil
-	case "2":
-		m.activeTab = tabStats
-		return m, nil
-	case "3":
-		m.activeTab = tabPeers
-		return m, nil
-	case "4":
-		m.activeTab = tabControl
-		return m, nil
-	case "5":
-		m.activeTab = tabSettings
-		if !m.settings.loaded {
-			return m, fetchSettingsCmd
-		}
-		return m, nil
 	case "r":
 		m.loading = true
 		return m, rpc.FetchSnapshotCmd
 	case "g":
 		m.showGraphs = !m.showGraphs
-		return m, nil
 	case "esc":
 		if m.notify.HasNotifications() {
 			m.notify.Dismiss()
-			return m, nil
 		}
 	}
 	return m, nil
