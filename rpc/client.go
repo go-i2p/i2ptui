@@ -115,8 +115,13 @@ func FetchSnapshotCmd() tea.Msg {
 }
 
 // FetchSnapshot gathers current router state into a RouterSnapshot.
-func FetchSnapshot() RouterSnapshot {
-	snap := RouterSnapshot{FetchedAt: time.Now()}
+func FetchSnapshot() (snap RouterSnapshot) {
+	snap = RouterSnapshot{FetchedAt: time.Now()}
+	defer func() {
+		if r := recover(); r != nil {
+			snap.Err = fmt.Errorf("rpc snapshot panic: %v", r)
+		}
+	}()
 
 	snap.Status = fetchString(i2pcontrol.Status)
 	snap.NetStatus = fetchString(i2pcontrol.NetStatus)
@@ -231,46 +236,67 @@ func FindUpdates() (string, error) {
 }
 
 // fetchString calls fn and returns "N/A" on error.
-func fetchString(fn func() (string, error)) string {
+func fetchString(fn func() (string, error)) (out string) {
+	out = "N/A"
+	defer func() {
+		_ = recover()
+	}()
 	v, err := fn()
 	if err != nil {
-		return "N/A"
+		return out
 	}
-	return v
+	out = v
+	return out
 }
 
 // fetchInt calls fn and returns 0 on error.
-func fetchInt(fn func() (int, error)) int {
+func fetchInt(fn func() (int, error)) (out int) {
+	defer func() {
+		_ = recover()
+	}()
 	v, err := fn()
 	if err != nil {
-		return 0
+		return out
 	}
-	return v
+	out = v
+	return out
 }
 
 // fetchInt64 calls fn and returns 0 on error.
-func fetchInt64(fn func() (int64, error)) int64 {
+func fetchInt64(fn func() (int64, error)) (out int64) {
+	defer func() {
+		_ = recover()
+	}()
 	v, err := fn()
 	if err != nil {
-		return 0
+		return out
 	}
-	return v
+	out = v
+	return out
 }
 
 // fetchFloat64 calls fn and returns 0 on error.
-func fetchFloat64(fn func() (float64, error)) float64 {
+func fetchFloat64(fn func() (float64, error)) (out float64) {
+	defer func() {
+		_ = recover()
+	}()
 	v, err := fn()
 	if err != nil {
-		return 0
+		return out
 	}
-	return v
+	out = v
+	return out
 }
 
 // fetchBool calls fn and returns false on error.
-func fetchBool(fn func() (bool, error)) bool {
+func fetchBool(fn func() (bool, error)) (out bool) {
+	defer func() {
+		_ = recover()
+	}()
 	v, err := fn()
 	if err != nil {
-		return false
+		return out
 	}
-	return v
+	out = v
+	return out
 }

@@ -36,6 +36,13 @@ func TestFetchStringError(t *testing.T) {
 	}
 }
 
+func TestFetchStringPanic(t *testing.T) {
+	fn := func() (string, error) { panic("boom") }
+	if v := fetchString(fn); v != "N/A" {
+		t.Errorf("expected N/A, got %s", v)
+	}
+}
+
 func TestFetchIntSuccess(t *testing.T) {
 	fn := func() (int, error) { return 42, nil }
 	if v := fetchInt(fn); v != 42 {
@@ -45,6 +52,13 @@ func TestFetchIntSuccess(t *testing.T) {
 
 func TestFetchIntError(t *testing.T) {
 	fn := func() (int, error) { return 0, errors.New("fail") }
+	if v := fetchInt(fn); v != 0 {
+		t.Errorf("expected 0, got %d", v)
+	}
+}
+
+func TestFetchIntPanic(t *testing.T) {
+	fn := func() (int, error) { panic("boom") }
 	if v := fetchInt(fn); v != 0 {
 		t.Errorf("expected 0, got %d", v)
 	}
@@ -64,6 +78,13 @@ func TestFetchInt64Error(t *testing.T) {
 	}
 }
 
+func TestFetchInt64Panic(t *testing.T) {
+	fn := func() (int64, error) { panic("boom") }
+	if v := fetchInt64(fn); v != 0 {
+		t.Errorf("expected 0, got %d", v)
+	}
+}
+
 func TestFetchFloat64Success(t *testing.T) {
 	fn := func() (float64, error) { return 3.14, nil }
 	if v := fetchFloat64(fn); v != 3.14 {
@@ -73,6 +94,13 @@ func TestFetchFloat64Success(t *testing.T) {
 
 func TestFetchFloat64Error(t *testing.T) {
 	fn := func() (float64, error) { return 0, errors.New("fail") }
+	if v := fetchFloat64(fn); v != 0 {
+		t.Errorf("expected 0, got %f", v)
+	}
+}
+
+func TestFetchFloat64Panic(t *testing.T) {
+	fn := func() (float64, error) { panic("boom") }
 	if v := fetchFloat64(fn); v != 0 {
 		t.Errorf("expected 0, got %f", v)
 	}
@@ -89,6 +117,13 @@ func TestFetchBoolError(t *testing.T) {
 	fn := func() (bool, error) { return false, errors.New("fail") }
 	if v := fetchBool(fn); v {
 		t.Error("expected false on error")
+	}
+}
+
+func TestFetchBoolPanic(t *testing.T) {
+	fn := func() (bool, error) { panic("boom") }
+	if v := fetchBool(fn); v {
+		t.Error("expected false on panic")
 	}
 }
 
