@@ -50,6 +50,12 @@ func (m statsModel) View(width int) string {
 	b.WriteString(m.row("Reject %", fmt.Sprintf("%d%%", s.ExplBuildRejectPct)))
 	b.WriteString(m.row("Expire %", fmt.Sprintf("%d%%", s.ExplBuildExpirePct)))
 
+	b.WriteString("\n")
+	b.WriteString(sectionStyle.Render("  Active Transport Sessions"))
+	b.WriteString("\n")
+	b.WriteString(m.row("NTCP2 Sessions", fmt.Sprintf("%d", s.NTCP2Sessions)))
+	b.WriteString(m.row("SSU2 Sessions", fmt.Sprintf("%d", s.SSU2Sessions)))
+
 	return b.String()
 }
 

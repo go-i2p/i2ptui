@@ -42,6 +42,10 @@ type RouterSnapshot struct {
 	ExplBuildRejectPct  int
 	ExplBuildExpirePct  int
 
+	// Transport sessions
+	NTCP2Sessions int
+	SSU2Sessions  int
+
 	// Settings
 	Upnp string
 
@@ -148,6 +152,9 @@ func FetchSnapshot() (snap RouterSnapshot) {
 	snap.ExplBuildSuccessPct = fetchInt(i2pcontrol.ExploratoryBuildSuccessPercentage)
 	snap.ExplBuildRejectPct = fetchInt(i2pcontrol.ExploratoryBuildRejectPercentage)
 	snap.ExplBuildExpirePct = fetchInt(i2pcontrol.ExploratoryBuildExpirePercentage)
+
+	snap.NTCP2Sessions = fetchInt(func() (int, error) { return i2pcontrol.RateStat("ntcp.activePeers", 60000) })
+	snap.SSU2Sessions = fetchInt(func() (int, error) { return i2pcontrol.RateStat("udp.activePeers", 60000) })
 
 	snap.Upnp = fetchString(i2pcontrol.Upnp)
 
