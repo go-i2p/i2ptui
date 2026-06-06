@@ -32,6 +32,7 @@ func (m overviewModel) View(width int) string {
 	b.WriteString(m.row("Status", s.Status))
 	b.WriteString(m.row("Net Status", s.NetStatus))
 	b.WriteString(m.row("Version", s.Version))
+	b.WriteString(m.row("Router Hash", s.RouterHash))
 	b.WriteString(m.row("Uptime", fmtDuration(s.UptimeDuration())))
 	b.WriteString(m.row("Known Peers", fmt.Sprintf("%d", s.KnownPeers)))
 	b.WriteString(m.row("Reseeding", fmt.Sprintf("%v", s.Reseeding)))

@@ -17,6 +17,7 @@ type RouterSnapshot struct {
 	Status               string
 	NetStatus            string
 	Version              string
+	RouterHash           string
 	Uptime               int64
 	IncomingBW           int
 	OutgoingBW           int
@@ -130,6 +131,7 @@ func FetchSnapshot() (snap RouterSnapshot) {
 	snap.Status = fetchString(i2pcontrol.Status)
 	snap.NetStatus = fetchString(i2pcontrol.NetStatus)
 	snap.Version = fetchString(i2pcontrol.Version)
+	snap.RouterHash = fetchRouterHash()
 	snap.Uptime = fetchInt64(i2pcontrol.UpTime)
 	snap.IncomingBW = fetchInt(i2pcontrol.IncomingBW)
 	snap.OutgoingBW = fetchInt(i2pcontrol.OutgoingBw)
@@ -306,4 +308,25 @@ func fetchBool(fn func() (bool, error)) (out bool) {
 	}
 	out = v
 	return out
+}
+
+// fetchRouterHash retrieves the local public router hash.
+func fetchRouterHash() string {
+	defer func() {
+		_ = recover()
+	}()
+	tokenMu.RLock()
+	tok := authToken
+	tokenMu.RUnlock()
+	resp, err := i2pcontrol.Call("RouterInfo", map[string]interface{}{
+		"i2p.router.net.local": nil,
+		"Token":                tok,
+	})
+	if err != nil {
+		return "N/A"
+	}
+	if v, ok := resp["i2p.router.net.local"]; ok && v != nil {
+		return fmt.Sprintf("%v", v)
+	}
+	return "N/A"
 }
