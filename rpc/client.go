@@ -319,13 +319,13 @@ func fetchRouterHash() string {
 	tok := authToken
 	tokenMu.RUnlock()
 	resp, err := i2pcontrol.Call("RouterInfo", map[string]interface{}{
-		"i2p.router.net.local": nil,
-		"Token":                tok,
+		"i2p.router.hash": nil,
+		"Token":           tok,
 	})
 	if err != nil {
 		return "N/A"
 	}
-	if v, ok := resp["i2p.router.net.local"]; ok && v != nil {
+	if v, ok := resp["i2p.router.hash"]; ok && v != nil {
 		return fmt.Sprintf("%v", v)
 	}
 	return "N/A"
