@@ -159,3 +159,9 @@ func TestTokenMutexReadWrite(t *testing.T) {
 	authToken = ""
 	tokenMu.Unlock()
 }
+
+func TestNTCP2ActivePeersStatName(t *testing.T) {
+	if ntcp2ActivePeersStat != "tcp.activePeers" {
+		t.Fatalf("unexpected NTCP2 stat name: got %q want %q", ntcp2ActivePeersStat, "tcp.activePeers")
+	}
+}
