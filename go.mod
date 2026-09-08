@@ -1,14 +1,16 @@
 module github.com/go-i2p/i2ptui
 
-go 1.26.1
+go 1.26.8
 
 require (
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/go-i2p/go-i2pcontrol v0.1.8
+	github.com/go-i2p/go-i2pcontrol v0.1.9-0.20260607233455-950087a3858f
 	github.com/spf13/cobra v1.10.2
 )
+
+require golang.org/x/net v0.59.0 // indirect
 
 require (
 	github.com/atotto/clipboard v0.1.4 // indirect

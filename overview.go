@@ -62,7 +62,8 @@ func (m overviewModel) View(width int) string {
 
 // row formats a label-value pair for display.
 func (m overviewModel) row(label, value string) string {
-	return fmt.Sprintf("  %s %s\n",
+	return fmt.Sprintf(
+		"  %s %s\n",
 		labelStyle.Render(label),
 		valueStyle.Render(value),
 	)

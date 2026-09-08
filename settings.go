@@ -176,7 +176,8 @@ func (m settingsModel) View(width int) string {
 		if i == m.cursor {
 			cursor = "> "
 		}
-		b.WriteString(fmt.Sprintf("  %s%s  %s\n",
+		b.WriteString(fmt.Sprintf(
+			"  %s%s  %s\n",
 			cursor,
 			labelStyle.Render(f.label),
 			f.input.View(),

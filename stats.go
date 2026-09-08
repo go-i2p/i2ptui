@@ -61,7 +61,8 @@ func (m statsModel) View(width int) string {
 
 // row formats a label-value pair for display.
 func (m statsModel) row(label, value string) string {
-	return fmt.Sprintf("  %s %s\n",
+	return fmt.Sprintf(
+		"  %s %s\n",
 		labelStyle.Render(label),
 		valueStyle.Render(value),
 	)

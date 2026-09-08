@@ -61,7 +61,8 @@ var versionCmd = &cobra.Command{
 // runTUI launches the Bubble Tea program with the configured options.
 func runTUI(cmd *cobra.Command, args []string) error {
 	var opts []i2ptui.Option
-	opts = append(opts,
+	opts = append(
+		opts,
 		i2ptui.WithHost(flagHost),
 		i2ptui.WithPort(flagPort),
 		i2ptui.WithPath(flagPath),
